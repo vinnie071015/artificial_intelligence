@@ -1,3 +1,5 @@
+Tracing the thoughts of a large language model
+
 Anthropic has published a new artical Tracing the thoughts of a large language model
 March 27, 2025  
 Link: https://www.anthropic.com/research/tracing-thoughts-language-model
