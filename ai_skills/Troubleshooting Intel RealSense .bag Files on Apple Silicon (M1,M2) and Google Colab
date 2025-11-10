@@ -1,0 +1,35 @@
+逻辑是，将.bag文件转换成RGB-D，然后用python包进行空间渲染。
+- 目前的问题是M芯片上的Realsense SDK不支持解码.bag文件，得不到录制的数据。
+
+方法一：
+- 在终端创建输出目录（放导出的 RGB/Depth）
+（mkdir -p out_dir）
+
+- 用 rs-convert 从 .bag 导出帧
+（rs-convert -i my_scene.bag -c -d -p out_dir
+）
+
+- 创建 Python 文件（例如 view_rgbd.py）
+（nano view_rgbd.py
+）
+python 文件
+- 在终端运行 Python 脚本
+（python view_rgbd.py
+）
+
+目前的步骤是检查文件，但是【rs-convert -i my_scene.bag -c -d -p out_dir】没办法到处RGB彩色帧。
+——Librealsense 在M1/M2上不支持从.bag文件中解码RGB彩色流，所以rs-convert无法导出RGB帧。
+
+方法二：
+- 打开RealSense Viewer
+- 打开.bag文件 
+- 播放检查
+- 导出RGB帧
+Intel 官方 2023 起已经停止维护 macOS 版本的 RealSense SDK。
+M1/M2 上只能跑一个「壳」，不能执行导入/导出。
+
+方法三：
+Colab realsense SDK
+Colab没有Root权限，SUDO都没有。
+
+
