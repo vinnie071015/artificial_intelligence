@@ -1,5 +1,11 @@
 【查看.bag是否成功生成了depth和RGB 】data
 rs-convert -i bag_files/20251110_172810.bag -c -d -p rgbd_frames
+ 10/11 17:59:09,581 WARNING [133524823680896] (backend-hid.cpp:1285) Failed to read busnum/devnum. Custom HID Device Path: /sys/bus/platform/drivers/hid_sensor_custom/HID-SENSOR-2000e1.3.auto	
+ 10/11 17:59:09,582 WARNING [133524823680896] (backend-hid.cpp:1285) Failed to read busnum/devnum. Custom HID Device Path: /sys/bus/platform/drivers/hid_sensor_custom/HID-SENSOR-2000e1.2.auto	
+100%	
+PNG converter	
+	231 Depth frame(s) processed
+
 —————————————————————————
 python3 - <<'PY'
 import pyrealsense2 as rs
