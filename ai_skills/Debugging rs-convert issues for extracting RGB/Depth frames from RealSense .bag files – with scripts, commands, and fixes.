@@ -1,0 +1,96 @@
+【查看.bag是否成功生成了depth和RGB 】data
+rs-convert -i bag_files/20251110_172810.bag -c -d -p rgbd_frames
+—————————————————————————
+python3 - <<'PY'
+import pyrealsense2 as rs
+import os
+import sys
+bag = "~/Code/SUTD/locate3d_test/bag_files/20251110_173337.bag"
+bag = os.path.expanduser(bag)
+cfg = rs.config()
+cfg.enable_device_from_file(bag, repeat_playback=False)
+pipe = rs.pipeline()
+prof = pipe.start(cfg)
+print("Streams in bag:")
+for s in prof.get_streams():
+    vs = s.as_video_stream_profile()
+    print(f"- {s.stream_type().name} {vs.format().name} {vs.width()}x{vs.height()} @ {vs.fps()}fps")
+pipe.stop()
+PY
+
+Streams in bag:
+- depth z16 848x480 @ 30fps
+- color rgb8 640x480 @ 30fps
+——————————————————————
+# 1) 在 locate3d_test 下找名字含 color 的图片
+find ~/Code/SUTD/locate3d_test -type f ( -iname '*color*.png' -o -iname '*color*.jpg' -o -iname '*color*.jpeg' \) -print
+
+命令没有找到RGB文件，确实生成失败了。
+—————————————————————————
+1.检查 .bag 文件中实际的 color 和 depth 帧数：
+python3 - <<'PY'
+import pyrealsense2 as rs
+import os
+
+bag = "~/Code/SUTD/locate3d_test/bag_files/20251110_173337.bag"
+bag = os.path.expanduser(bag)
+
+cfg = rs.config()
+cfg.enable_device_from_file(bag, repeat_playback=False)
+
+pipe = rs.pipeline()
+prof = pipe.start(cfg)
+
+depth_count = 0
+color_count = 0
+
+try:
+    while True:
+        frames = pipe.wait_for_frames(timeout_ms=5000)  # 超时避免无限循环
+        if frames.get_depth_frame():
+            depth_count += 1
+        if frames.get_color_frame():
+            color_count += 1
+except RuntimeError:
+    pass  # 结束时正常退出
+finally:
+    pipe.stop()
+
+print(f"Depth frames: {depth_count}")
+print(f"Color frames: {color_count}")
+PY
+
+Depth frames: 229
+Color frames: 229
+
+2.检查 rs-convert 帮助和版本：
+运行 rs-convert -h 查看完整选项，确保 -c 是 --color（提取 color 帧到 PNG）。
+   -c,  --color
+     convert color frames (default - all supported)
+
+检查 SDK 版本：rs-enumerate-devices 或查看 /usr/local/lib/librealsense.so 的版本。如果是旧版，升级 librealsense（sudo apt update && sudo apt install librealsense2-utils librealsense2-dev）。
+    Firmware Version              : 	5.17.0.10
+    Recommended Firmware Version  : 	5.17.0.10
+
+
+3.测试简单命令：
+试只提取 color：rs-convert -i ~/Code/SUTD/locate3d_test/bag_files/20251110_173337.bag -c -p rgbd_frames
+
+只提取color成功
+——————————————为什么只提取color成功？—————————————————
+rs-convert -i ~/Code/SUTD/locate3d_test/bag_files/20251110_173337.bag -c -p rgbd_frames
+
+为什么 -c -d 只提取 depth，而只用 -c 提取 color 成功？
+
+核心原因：-d 标志不是简单地“启用 depth 提取”，而是指示“只提取 depth 帧，并忽略其他类型的帧”（如 color、IR、IMU 等）。这是工具的设计行为，即使你同时指定了 -c（--color，用于提取 color 帧），-d 会覆盖并限制只处理 depth。
+从 librealsense 的 GitHub issue 和源代码分析来看，-d 被实现为一个专有的“只 depth 模式”，优先级高于其他流选择标志（如 -c）。当 -d 存在时，工具会跳过 color 流的处理，只输出 depth 相关的文件（如 depth PNG）。
+相反，只用 -c 时，它会提取 color 帧（默认转换为 PNG）。如果不指定任何流标志（如 -c 或 -d），工具默认提取所有支持的流（all supported，包括 color 和 depth，如果 .bag 中有）。
+
+为什么这样设计？这可能是为了简化某些场景（如只关注 depth 的点云转换），但它确实会导致参数组合的意外行为（e.g., -c -d 只剩 depth）。如果你想同时提取 color 和 depth，不要用 -d；直接用 -c（如果默认不包括 depth）或不指定流标志（默认 all）。
+建议修正命令：
+要提取 color 和 depth：rs-convert -i 20251110_173337.bag -p rgbd_frames（不加 -c 或 -d，默认 all）。
+或明确指定（如果 SDK 版本支持）：检查你的 rs-convert -h，看是否有其他流标志如 --depth-format（但标准版中 -d 是 only-depth）。
+
+如果你的 SDK 版本旧（e.g., <2.50），可能有 bug 加剧这个问题；建议升级 librealsense（如 sudo apt install librealsense2-utils）。
+
+
